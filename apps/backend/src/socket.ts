@@ -1,5 +1,6 @@
 import { Server, Socket } from "socket.io";
 import { prismaClient as prisma } from "@repo/db/client";
+import { fetchGeminiResponse } from "./gemini";
 
 export function initializeSocket(io: Server): void {
   io.on("connection", (socket: Socket) => {
@@ -99,14 +100,16 @@ async function handleMessageSend(socket: Socket, data: any): Promise<void> {
 
     console.log("User message saved to database:", newMessage);
 
-    // Simulate AI response (for now, echoing the same content)
-    const aiResponse = `You said: "${content}"`;
+    // Fetch AI response from Gemini
+    const geminiResponse = await fetchGeminiResponse(content);
+
+    console.log("Gemini response received:", geminiResponse);
 
     // Add the AI's response to the database
     const aiMessage = await prisma.message.create({
       data: {
         conversationId,
-        content: aiResponse,
+        content: geminiResponse,
         isUserMessage: false,
         timestamp: new Date(),
       },
@@ -116,12 +119,12 @@ async function handleMessageSend(socket: Socket, data: any): Promise<void> {
 
     // Send the AI response back to the client
     socket.emit("message:receive", {
-      message: aiResponse,
+      message: geminiResponse,
       conversationId,
       isUserMessage: false,
     });
   } catch (error) {
-    console.error("Error saving message to database:", error);
+    console.error("Error processing message:", error);
     socket.emit("message:error", {
       error: "Internal server error while processing the message",
     });
