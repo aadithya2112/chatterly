@@ -1,0 +1,76 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generator/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// For admin users who can access the dashboard
+model Admin {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String?
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  sites        Site[] // One-to-many relationship with Site
+}
+
+// Represents websites where the chat widget is embedded
+model Site {
+  id            String         @id @default(cuid())
+  name          String
+  domain        String
+  apiKey        String         @unique // For widget authentication
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  conversations Conversation[]
+  users         User[]
+  adminId       String // Foreign key to associate with Admin
+  admin         Admin          @relation(fields: [adminId], references: [id]) // Relationship with Admin
+}
+
+// Represents end users who initiate chats
+model User {
+  id            String         @id @default(cuid())
+  sessionId     String         @unique
+  email         String?
+  name          String?
+  metadata      Json?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  siteId        String
+  site          Site           @relation(fields: [siteId], references: [id])
+  conversations Conversation[]
+}
+
+// Represents a chat conversation
+model Conversation {
+  id        String    @id @default(cuid())
+  userId    String
+  siteId    String
+  startedAt DateTime  @default(now())
+  endedAt   DateTime?
+  messages  Message[]
+  user      User      @relation(fields: [userId], references: [id])
+  site      Site      @relation(fields: [siteId], references: [id])
+
+  @@index([userId])
+  @@index([siteId])
+}
+
+// Represents individual messages in a conversation
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  content        String       @db.Text
+  isUserMessage  Boolean // true if sent by user, false if sent by AI
+  aiModel        String? // Name of AI model used (Gemini, etc.)
+  timestamp      DateTime     @default(now())
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+}
