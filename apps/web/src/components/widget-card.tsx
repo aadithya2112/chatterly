@@ -64,7 +64,7 @@ export function WidgetCard({ widget }: WidgetCardProps) {
         </div>
         <div className="flex items-center gap-1 text-sm">
           <MessageSquare className="h-4 w-4 text-muted-foreground" />
-          <span>{widget.conversations} conversations</span>
+          {/* <span>{widget.conversations} conversations</span> */}
         </div>
       </CardContent>
       <CardFooter>

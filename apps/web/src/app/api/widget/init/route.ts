@@ -1,6 +1,18 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prismaClient as prisma } from "@repo/db/client";
 import { nanoid } from "nanoid";
+
+export async function OPTIONS(request: NextRequest) {
+  // Handle OPTIONS preflight request
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    },
+  });
+}
 
 export async function POST(request: Request) {
   try {
