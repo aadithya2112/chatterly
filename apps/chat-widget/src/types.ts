@@ -4,3 +4,8 @@ export interface Message {
   sender: "user" | "bot";
   timestamp: string;
 }
+
+export interface ChatWidgetConfig {
+  apiKey: string;
+  serverUrl?: string;
+}
