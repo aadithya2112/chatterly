@@ -11,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { toast } from "sonner";
-import type { WidgetDetails } from "../widget-details-page";
+import { WidgetDetails } from "@/lib/types";
 
 interface StatsCardsProps {
   widget: WidgetDetails;

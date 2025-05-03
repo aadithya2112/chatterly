@@ -12,7 +12,7 @@ import { Copy, Check } from "lucide-react";
 import { toast } from "sonner";
 import SyntaxHighlighter from "react-syntax-highlighter";
 import { atomOneDark } from "react-syntax-highlighter/dist/esm/styles/hljs";
-import { WidgetDetails } from "@/app/dashboard/widget/[id]/page";
+import { WidgetDetails } from "@/lib/types";
 
 interface IntegrationTabProps {
   widget: WidgetDetails;

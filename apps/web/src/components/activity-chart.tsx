@@ -1,4 +1,3 @@
-import { WidgetDetails } from "@/app/dashboard/widget/[id]/page";
 import {
   Card,
   CardContent,
@@ -6,6 +5,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { WidgetDetails } from "@/lib/types";
 // import type { WidgetDetails } from "../widget-details-page";
 
 interface ActivityChartProps {

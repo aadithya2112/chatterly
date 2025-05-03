@@ -20,7 +20,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Search, Eye, ChevronRight, Users } from "lucide-react";
 import { useState } from "react";
-import { WidgetDetails } from "@/app/dashboard/widget/[id]/page";
+import { WidgetDetails } from "@/lib/types";
 
 interface UsersTabProps {
   widget: WidgetDetails;

@@ -21,7 +21,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Search, Eye, ChevronRight, MessageSquare } from "lucide-react";
 import { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
-import { WidgetDetails } from "@/app/dashboard/widget/[id]/page";
+import { WidgetDetails } from "@/lib/types";
 
 interface ConversationsTabProps {
   widget: WidgetDetails;
