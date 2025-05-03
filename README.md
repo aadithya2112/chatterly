@@ -2,6 +2,10 @@
 
 An AI-powered chat widget you can drop into any website, plus a modern dashboard to track user conversations and analytics.
 
+## Video Demo
+
+[![Watch the video](https://drive.google.com/file/d/1fVWkXF23fB2H_3WEGB4bb6FlewWpBxAU/view?usp=sharing)](https://drive.google.com/file/d/1fVWkXF23fB2H_3WEGB4bb6FlewWpBxAU/view?usp=sharing)
+
 ## Table of Contents
 
 1. [Features](#features)
@@ -36,12 +40,11 @@ I used a **monorepo** with [Turborepo](https://turborepo.org/) & Bun:
 - **apps/web** – Next.js dashboard & HTTP API
 - **apps/backend** – Bun + Express + Socket.io server
 - **packages/db** – Prisma client & database layer
-- **packages/ui** – Shared React components
 
 ### Data Flow
 
 1. Widget opens a WebSocket to `backend` → streams user messages.
-2. Backend invokes AI via `@google/genai` → pushes responses back.
+2. Backend invokes AI via `gemini API` → pushes responses back.
 3. REST calls from `web` (Next.js) read/write analytics via `packages/db`.
 4. Dashboard UI shows aggregated metrics and real-time sessions.
 
@@ -51,8 +54,8 @@ I used a **monorepo** with [Turborepo](https://turborepo.org/) & Bun:
 - **Frameworks**: React, Next.js, Express, Socket.io
 - **Bundler**: Vite (widget), Turbo (monorepo)
 - **Runtime**: Node.js ≥18 & [Bun](https://bun.sh/)
-- **DB**: Prisma + PostgreSQL database of choice
-- **Deployment**: Digital Ocean, GitHub Pages (widget via `gh-pages`)
+- **DB**: Prisma + PostgreSQL database
+- **Deployment**: Digital Ocean (socketio server and nextjs server), GitHub Pages (widget via `gh-pages`)
 
 ## Getting Started
 
@@ -67,28 +70,32 @@ I used a **monorepo** with [Turborepo](https://turborepo.org/) & Bun:
 Clone & install:
 
 ```bash
-git clone https://github.com/your-org/chatterly.git
+git clone https://github.com/aadithya2112/chatterly
 cd chatterly
 # install everything
-bun install   # or `npm install` if you prefer
+bun install
 ```
 
 Run all services in dev mode:
 
 ```bash
-npm run dev
+bun run dev
 # → dashboard & widget & backend start concurrently
 ```
 
-Individually:
+Individually: (Recommended)
 
+- **Generate Prisma Client**
+  ```bash
+  cd packages/db && bunx prisma generate
+  ```
 - **Dashboard (Next.js)**
   ```bash
-  cd apps/web && npm run dev
+  cd apps/web && bun run dev
   ```
 - **Widget (Vite)**
   ```bash
-  cd apps/chat-widget && npm run dev
+  cd apps/chat-widget && bun run dev
   ```
 - **Backend (Socket.io)**
   ```bash
@@ -101,28 +108,31 @@ Create a `.env` (for each app) from `.env.example`:
 
 ```env
 # apps/backend/.env
-PORT=4000
-DATABASE_URL="postgres://user:pass@localhost:5432/db"
 GOOGLE_GENAI_API_KEY="…"
 
 # apps/web/.env
-NEXT_PUBLIC_API_URL="http://localhost:3000/api"
-NEXT_PUBLIC_WS_URL="ws://localhost:4000"
-# plus any auth keys
+DATABASE_URL="postgres://user:pass@localhost:5432/db"
+JWT_SECRET="…"
+
+# packages/db/.env
+DATABASE_URL="postgres://user:pass@localhost:5432/db" # Same as web
+```
+
 ```
 
 ## Project Structure
 
 ```
+
 /
 ├─ apps/
-│  ├─ chat-widget/      # React widget (Vite)
-│  ├─ web/              # Dashboard & HTTP API (Next.js)
-│  └─ backend/          # WebSocket server (Bun + Express)
+│ ├─ chat-widget/ # React widget (Vite)
+│ ├─ web/ # Dashboard & HTTP API (Next.js)
+│ └─ backend/ # WebSocket server (Bun + Express)
 └─ packages/
-    ├─ db/               # Prisma client & migrations
-    └─ ui/               # Shared React components
-```
+├─ db/ # Prisma client & migrations
+
+````
 
 ## Embedding the Widget
 
@@ -145,7 +155,7 @@ Once you’ve built & deployed `apps/chat-widget` (→ GitHub Pages or your CDN)
     <h1>My page with AI Chat</h1>
   </body>
 </html>
-```
+````
 
 - `data-widget-id`: Unique ID from your Dashboard
 - `data-api-url`: REST endpoints for auth/analytics
@@ -153,10 +163,8 @@ Once you’ve built & deployed `apps/chat-widget` (→ GitHub Pages or your CDN)
 
 ## Deployment & Demos
 
-- **Widget Demo** (GitHub Pages): [https://your-org.github.io/chat-widget](https://your-org.github.io/chat-widget)
-- **Dashboard Demo** (Vercel): [https://chatterly-dashboard.vercel.app](https://chatterly-dashboard.vercel.app)
-
-Replace these with your actual URLs once deployed.
+- **Widget Script** (GitHub Pages): [https://aadithya2112.github.io/chatterly/chat-widget.iife.js](https://aadithya2112.github.io/chatterly/chat-widget.iife.js)
+- **Main webpage** (DigitalOcean): [https://chatterly.aadithya.tech/](https://chatterly.aadithya.tech/)
 
 ## Challenges & Solutions
 
@@ -166,14 +174,3 @@ Replace these with your actual URLs once deployed.
   Leveraged Turborepo cache to parallelize builds & reduce CI time by 70%.
 - **Shared Types**  
   Configured `packages/typescript-config` & workspace path aliases to avoid duplication.
-
-## Contributing
-
-1. Fork & clone
-2. Create a feature branch
-3. Install & run `npm run dev`
-4. Submit PR & describe your changes
-
-## License
-
-MIT
