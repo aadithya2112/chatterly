@@ -4,7 +4,7 @@ An AI-powered chat widget you can drop into any website, plus a modern dashboard
 
 ## Video Demo
 
-[![Watch the video](https://drive.google.com/file/d/1fVWkXF23fB2H_3WEGB4bb6FlewWpBxAU/view?usp=sharing)](https://drive.google.com/file/d/1fVWkXF23fB2H_3WEGB4bb6FlewWpBxAU/view?usp=sharing)
+[![Watch the video](./dashboard-img.png)](https://drive.google.com/file/d/1fVWkXF23fB2H_3WEGB4bb6FlewWpBxAU/view?usp=sharing)
 
 ## Table of Contents
 
