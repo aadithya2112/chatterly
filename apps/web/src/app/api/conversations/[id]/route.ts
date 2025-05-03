@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prismaClient as prisma } from "@repo/db/client";
 import jwt from "jsonwebtoken";
 import { jsonToken } from "@/app/types/token";
@@ -6,11 +6,11 @@ import { jsonToken } from "@/app/types/token";
 const SECRET = process.env.JWT_SECRET || "your-secret-key";
 
 export async function GET(
-  req: Request,
-  { params }: { params: { id: string } }
+  req: NextRequest,
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const conversationId = params.id;
+    const { id: conversationId } = await context.params;
 
     if (!conversationId) {
       return NextResponse.json(

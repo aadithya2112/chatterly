@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prismaClient as prisma } from "@repo/db/client";
 import jwt from "jsonwebtoken";
 import { jsonToken } from "@/app/types/token";
@@ -6,12 +6,17 @@ import { jsonToken } from "@/app/types/token";
 const SECRET = process.env.JWT_SECRET || "your-secret-key";
 
 // Create a helper function to get the widget id from params
-async function getSiteId(params: any): Promise<string> {
-  // Return the id from params
-  return params.id;
+async function getSiteId(
+  paramsPromise: Promise<{ id: string }>
+): Promise<string> {
+  const { id } = await paramsPromise;
+  return id;
 }
 
-export async function GET(req: Request, context: { params: { id: string } }) {
+export async function GET(
+  req: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
   try {
     // Use the helper function to get the id
     const siteId = await getSiteId(context.params);
