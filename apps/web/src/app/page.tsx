@@ -24,7 +24,7 @@ export default function Home() {
               <MessageSquare className="h-6 w-6 text-white" />
             </div>
             <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-violet-600">
-              ChatWidget
+              Chatterly
             </span>
           </div>
           <AuthButtons />
@@ -105,9 +105,7 @@ export default function Home() {
                       <div className="bg-gradient-to-r from-blue-500 to-violet-500 p-1 rounded-md w-8 h-8 flex items-center justify-center">
                         <MessageSquare className="h-5 w-5 text-white" />
                       </div>
-                      <span className="font-semibold">
-                        ChatWidget Assistant
-                      </span>
+                      <span className="font-semibold">Chatterly</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <div className="h-3 w-3 rounded-full bg-green-500 animate-pulse"></div>
@@ -174,8 +172,8 @@ export default function Home() {
                 </div>
                 <h3 className="text-xl font-bold mb-3">AI-Powered Responses</h3>
                 <p className="text-muted-foreground">
-                  Automate responses to common questions with our intelligent AI
-                  that learns from your content and previous conversations.
+                  Automate responses to common questions with our intelligent
+                  AI.
                 </p>
               </div>
 
@@ -310,7 +308,7 @@ export default function Home() {
                     Get Started for Free <ArrowRight className="h-4 w-4" />
                   </Button>
                 </Link>
-                <Link href="/pricing">
+                {/* <Link href="/pricing">
                   <Button
                     size="lg"
                     variant="outline"
@@ -318,7 +316,7 @@ export default function Home() {
                   >
                     View Pricing Plans
                   </Button>
-                </Link>
+                </Link> */}
               </div>
               <p className="mt-6 text-sm text-muted-foreground flex items-center justify-center gap-2">
                 <CheckCircle className="h-4 w-4 text-green-500" />

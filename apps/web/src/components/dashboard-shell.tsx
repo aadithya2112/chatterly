@@ -7,6 +7,7 @@ import { DashboardNav } from "@/components/dashboard-nav";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/theme-toggle";
+import Link from "next/link";
 
 interface DashboardShellProps {
   children: ReactNode;
@@ -37,9 +38,11 @@ export function DashboardShell({ children }: DashboardShellProps) {
               <div className="bg-gradient-to-r from-blue-600 to-violet-600 p-1 rounded-md">
                 <MessageSquare className="h-5 w-5 text-white" />
               </div>
-              <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-violet-600">
-                Chatterly
-              </span>
+              <Link href={"/dashboard"}>
+                <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-violet-600">
+                  Chatterly
+                </span>
+              </Link>
             </div>
           </div>
 
