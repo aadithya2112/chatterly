@@ -19,38 +19,101 @@ function App({ apiKey, serverUrl }: AppProps) {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [socket, setSocket] = useState<Socket | null>(null);
   const [_, setIsLoading] = useState(true);
+
+  // Load messages from localStorage when sessionId is available
+  useEffect(() => {
+    if (sessionId) {
+      const savedMessages = localStorage.getItem(`chatMessages-${sessionId}`);
+      if (savedMessages) {
+        try {
+          const parsedMessages = JSON.parse(savedMessages);
+          if (Array.isArray(parsedMessages) && parsedMessages.length > 0) {
+            console.log(
+              `📚 Loaded ${parsedMessages.length} messages from localStorage`
+            );
+            setMessages(parsedMessages);
+            return; // Skip adding welcome message if we loaded messages
+          }
+        } catch (error) {
+          console.error("Error parsing saved messages:", error);
+        }
+      }
+
+      // Add a welcome message if no messages were loaded
+      const initialMessage: Message = {
+        id: "welcome",
+        text: "👋 Hi there! How can I help you today?",
+        sender: "bot",
+        timestamp: new Date().toISOString(),
+      };
+      setMessages([initialMessage]);
+    }
+  }, [sessionId]);
+
+  // Save messages to localStorage whenever they change
+  useEffect(() => {
+    if (sessionId && messages.length > 0) {
+      localStorage.setItem(
+        `chatMessages-${sessionId}`,
+        JSON.stringify(messages)
+      );
+      console.log(`💾 Saved ${messages.length} messages to localStorage`);
+    }
+  }, [messages, sessionId]);
+
   // Initialize connection with the backend
   useEffect(() => {
-    // Step 1: Initialize session with backend
     const initSession = async () => {
       try {
         setIsLoading(true);
 
         // Try to get existing sessionId from localStorage
         const savedSessionId = localStorage.getItem("chatSessionId");
+        console.log("Saved sessionId from localStorage:", savedSessionId);
 
-        // Make request to backend to validate API key and get/create session
-        const response = await fetch(`${serverUrl}/widget/init`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            apiKey,
-            sessionId: savedSessionId || undefined,
-          }),
-        });
+        let newSessionId = savedSessionId;
 
-        if (!response.ok) {
-          throw new Error("Failed to initialize session");
+        // Only make API call if no session ID exists in localStorage
+        if (!savedSessionId) {
+          // Make request to backend to validate API key and create new session
+          const response = await fetch(`${serverUrl}/widget/init`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              apiKey,
+              sessionId: undefined,
+            }),
+          });
+
+          if (!response.ok) {
+            throw new Error("Failed to initialize session");
+          }
+
+          const data = await response.json();
+          newSessionId = data.sessionId;
+
+          console.log("New session ID from server:", newSessionId);
+
+          // Save the new session ID to localStorage
+          if (newSessionId) {
+            localStorage.setItem("chatSessionId", newSessionId);
+          } else {
+            console.error("Failed to save session ID: newSessionId is null");
+          }
+          console.log("Saved new sessionId to localStorage");
+
+          // If we have history from the response, use it
+          if (data.history && Array.isArray(data.history)) {
+            setMessages(data.history);
+          }
+        } else {
+          console.log("Using existing session ID from localStorage");
         }
 
-        const data = await response.json();
-        const newSessionId = data.sessionId;
-
-        // Save the session ID
+        // Set the session ID
         setSessionId(newSessionId);
-        localStorage.setItem("chatSessionId", newSessionId);
 
         // Connect to socket.io server
         const newSocket = io(WS_BACKEND_URL, {
@@ -60,7 +123,7 @@ function App({ apiKey, serverUrl }: AppProps) {
         newSocket.on("connect", () => {
           console.log(`✅ Connected to server with Socket ID: ${newSocket.id}`);
 
-          // Emit authenticate event after connection
+          // Emit authenticate event after connection using the session ID
           newSocket.emit("authenticate", {
             sessionId: newSessionId,
           });
@@ -94,23 +157,21 @@ function App({ apiKey, serverUrl }: AppProps) {
           };
           setMessages([errorMessage]);
 
+          // Clear invalid sessionId from localStorage
+          localStorage.removeItem("chatSessionId");
+          localStorage.removeItem(`chatMessages-${newSessionId}`);
+
           setIsLoading(false);
         });
 
         // Handle incoming messages
         newSocket.on("message:receive", (messageData) => {
           console.log(`📥 Message received from server:`, messageData);
-          // messageData is of this format
-          // {
-          //   message: "Okay, I'm ready. How can I help you?\n",
-          //   conversationId: "cma6zez0c00012rbu2p1ieymk",
-          //   isUserMessage: false,
-          // };
           // Format the incoming message
           const botMessage: Message = {
             id: messageData.id || `msg-${Date.now()}`,
-            text: messageData.message, // Updated to use message instead of content
-            sender: messageData.isUserMessage ? "user" : "bot", // Use isUserMessage to determine sender
+            text: messageData.message,
+            sender: messageData.isUserMessage ? "user" : "bot",
             timestamp: messageData.timestamp || new Date().toISOString(),
           };
 
@@ -150,26 +211,12 @@ function App({ apiKey, serverUrl }: AppProps) {
           );
 
           // Re-authenticate after reconnection
-          if (sessionId) {
-            newSocket.emit("authenticate", { sessionId });
+          if (newSessionId) {
+            newSocket.emit("authenticate", { sessionId: newSessionId });
           }
         });
 
         setSocket(newSocket);
-
-        // Load conversation history (if provided by your API)
-        if (data.history && Array.isArray(data.history)) {
-          setMessages(data.history);
-        } else {
-          // Add a welcome message if no history
-          const initialMessage: Message = {
-            id: "welcome",
-            text: "👋 Hi there! How can I help you today?",
-            sender: "bot",
-            timestamp: new Date().toISOString(),
-          };
-          setMessages([initialMessage]);
-        }
 
         return newSocket;
       } catch (error) {
