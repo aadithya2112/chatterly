@@ -2,6 +2,8 @@
 
 An AI-powered chat widget you can drop into any website, plus a modern dashboard to track user conversations and analytics.
 
+## [Click for Live Demo](https://chatterly.aadithya.tech/)
+
 ## Video Demo
 
 [![Watch the video](./dashboard-img.png)](https://drive.google.com/file/d/1fVWkXF23fB2H_3WEGB4bb6FlewWpBxAU/view?usp=sharing)
