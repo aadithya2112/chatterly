@@ -46,7 +46,7 @@ export function IntegrationTab({ widget }: IntegrationTabProps) {
   };
 </script>
 
-<script src="https://cdn.chatwidget.com/embed.js"></script>`;
+<script src="https://aadithya2112.github.io/chatterly/chat-widget.iife.js"></script>`;
   };
 
   return (

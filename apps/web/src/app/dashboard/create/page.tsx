@@ -114,7 +114,7 @@ export default function CreateWidget() {
   // Get the script URL based on domain
   const getScriptUrl = () => {
     // You can customize this logic based on your deployment strategy
-    return "https://widget.chatcraft.com/widget.js";
+    return "https://aadithya2112.github.io/chatterly/chat-widget.iife.js";
   };
 
   // Generate config-style embed code
@@ -183,11 +183,11 @@ export default function CreateWidget() {
         badge={activeStep === 2 ? "Widget Created!" : undefined}
       ></DashboardHeader>
 
-      <div className="flex items-center gap-2 mb-6">
+      {/* <div className="flex items-center gap-2 mb-6">
         <span className="text-sm text-muted-foreground">
           Creating new widget
         </span>
-      </div>
+      </div> */}
 
       {activeStep === 1 ? (
         <div className="grid md:grid-cols-2 gap-8">
@@ -288,9 +288,9 @@ export default function CreateWidget() {
       ) : (
         <div className="space-y-8">
           <div className="max-w-md mx-auto">
-            <div className="p-8 text-center bg-green-50 dark:bg-green-900/20 rounded-full w-32 h-32 mx-auto mb-6">
+            {/* <div className="p-8 text-center bg-green-50 dark:bg-green-900/20 rounded-full w-32 h-32 mx-auto mb-6">
               <CheckCircle2 className="h-16 w-16 text-green-500 mx-auto" />
-            </div>
+            </div> */}
             <h2 className="text-2xl font-bold text-center mb-2">
               Your widget is ready!
             </h2>
