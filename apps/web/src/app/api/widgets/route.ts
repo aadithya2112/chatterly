@@ -54,11 +54,29 @@ export async function GET(req: Request) {
         domain: true,
         apiKey: true,
         createdAt: true,
-        conversations: true, // Assuming conversations are related data
+        conversations: true,
+        _count: {
+          select: {
+            users: true,
+            conversations: true,
+          },
+        },
       },
     });
 
-    return NextResponse.json({ success: true, widgets });
+    // Transform the data to include user count in a more accessible format
+    const transformedWidgets = widgets.map((widget) => ({
+      id: widget.id,
+      name: widget.name,
+      domain: widget.domain,
+      apiKey: widget.apiKey,
+      createdAt: widget.createdAt,
+      conversations: widget.conversations,
+      userCount: widget._count.users,
+      conversationCount: widget._count.conversations,
+    }));
+
+    return NextResponse.json({ success: true, widgets: transformedWidgets });
   } catch (error) {
     console.error("[Fetch Widgets API]", error);
     return NextResponse.json(
