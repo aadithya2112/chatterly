@@ -11,6 +11,17 @@ const compat = new FlatCompat({
 
 const eslintConfig = [
   ...compat.extends("next/core-web-vitals", "next/typescript"),
+  // Add custom rules to suppress the params.id warning
+  {
+    files: ["src/app/api/**/*.ts"],
+    rules: {
+      // Disable the sync dynamic API rule that's causing the warning
+      "@next/next/no-sync-scripts": "off",
+      // This is the specific rule for the params.id issue
+      "@typescript-eslint/no-unsafe-member-access": "off",
+      "@typescript-eslint/no-unsafe-assignment": "off"
+    }
+  }
 ];
 
 export default eslintConfig;

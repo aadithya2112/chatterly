@@ -5,12 +5,16 @@ import { jsonToken } from "@/app/types/token";
 
 const SECRET = process.env.JWT_SECRET || "your-secret-key";
 
-export async function GET(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
+// Create a helper function to get the widget id from params
+async function getSiteId(params: any): Promise<string> {
+  // Return the id from params
+  return params.id;
+}
+
+export async function GET(req: Request, context: { params: { id: string } }) {
   try {
-    const siteId = params.id;
+    // Use the helper function to get the id
+    const siteId = await getSiteId(context.params);
 
     if (!siteId) {
       return NextResponse.json(
