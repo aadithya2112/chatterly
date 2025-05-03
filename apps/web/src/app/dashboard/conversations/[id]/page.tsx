@@ -1,16 +1,38 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { DashboardHeader } from "@/components/dashboard-header";
 import { DashboardShell } from "@/components/dashboard-shell";
-import { ArrowLeft, Calendar, ExternalLink, User } from "lucide-react";
+import {
+  ArrowLeft,
+  Calendar,
+  MessageSquare,
+  Clock,
+  User,
+  Globe,
+  ChevronDown,
+  Download,
+  ExternalLink,
+  Share2,
+} from "lucide-react";
 import { toast } from "sonner";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { formatDistanceToNow, format } from "date-fns";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { MessageBubble } from "@/components/message-bubble";
+import { ConversationMetaCard } from "@/components/conversation-meta-card";
+import { ConversationLoadingState } from "@/components/conversation-loading-state";
+import { ConversationErrorState } from "@/components/conversation-error-state";
 
 type Message = {
   id: string;
@@ -45,6 +67,12 @@ export default function ConversationDetailsPage() {
   );
   const [loading, setLoading] = useState(true);
   const conversationId = params.id as string;
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // Scroll to the bottom of messages when they load
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [conversation?.messages.length]);
 
   useEffect(() => {
     const fetchConversationDetails = async () => {
@@ -57,6 +85,7 @@ export default function ConversationDetailsPage() {
       }
 
       try {
+        setLoading(true);
         const response = await fetch(`/api/conversations/${conversationId}`, {
           method: "GET",
           headers: {
@@ -87,41 +116,80 @@ export default function ConversationDetailsPage() {
     }
   }, [conversationId, router]);
 
+  // Helper functions for formatting
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString();
+    return format(new Date(dateString), "MMM d, yyyy 'at' h:mm a");
+  };
+
+  const getDuration = () => {
+    if (!conversation) return "";
+
+    const start = new Date(conversation.startedAt);
+    const end = conversation.endedAt
+      ? new Date(conversation.endedAt)
+      : new Date();
+    const durationMs = end.getTime() - start.getTime();
+    const minutes = Math.floor(durationMs / 60000);
+
+    if (minutes < 1) {
+      return "Less than a minute";
+    } else if (minutes === 1) {
+      return "1 minute";
+    } else {
+      return `${minutes} minutes`;
+    }
+  };
+
+  const handleExport = () => {
+    if (!conversation) return;
+
+    // Create transcript content
+    const transcript = conversation.messages
+      .map((msg) => {
+        const sender = msg.isUserMessage
+          ? conversation.user.name || "User"
+          : "Assistant";
+        const time = format(new Date(msg.timestamp), "yyyy-MM-dd HH:mm:ss");
+        return `[${time}] ${sender}: ${msg.content}`;
+      })
+      .join("\n\n");
+
+    const header = `Conversation with ${conversation.user.name || "Anonymous User"}\n`;
+    const metadata = `Site: ${conversation.site.name} (${conversation.site.domain})\n`;
+    const dateInfo = `Started: ${formatDate(conversation.startedAt)}\n`;
+    const endInfo = conversation.endedAt
+      ? `Ended: ${formatDate(conversation.endedAt)}\n`
+      : "Status: Active\n";
+    const separator = "=".repeat(50) + "\n\n";
+
+    const fullTranscript =
+      header + metadata + dateInfo + endInfo + separator + transcript;
+
+    // Create download link
+    const element = document.createElement("a");
+    const file = new Blob([fullTranscript], { type: "text/plain" });
+    element.href = URL.createObjectURL(file);
+    element.download = `conversation-${conversation.id}.txt`;
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+
+    toast.success("Conversation exported successfully!");
   };
 
   if (loading) {
-    return (
-      <DashboardShell>
-        <div className="flex items-center justify-center h-64">
-          <p>Loading conversation...</p>
-        </div>
-      </DashboardShell>
-    );
+    return <ConversationLoadingState />;
   }
 
   if (!conversation) {
-    return (
-      <DashboardShell>
-        <div className="flex flex-col items-center justify-center h-64 gap-4">
-          <p>Conversation not found or you don't have access to it.</p>
-          <Button asChild>
-            <Link href="/dashboard">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Dashboard
-            </Link>
-          </Button>
-        </div>
-      </DashboardShell>
-    );
+    return <ConversationErrorState />;
   }
 
   return (
     <DashboardShell>
       <DashboardHeader
         heading="Conversation Details"
-        text={`Conversation from ${conversation.site.name}`}
+        text={`Viewing conversation from ${conversation.site.name}`}
       >
         <div className="flex gap-2">
           <Button variant="outline" asChild>
@@ -130,108 +198,173 @@ export default function ConversationDetailsPage() {
               Back to Widget
             </Link>
           </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline">
+                Actions <ChevronDown className="ml-2 h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={handleExport}>
+                <Download className="mr-2 h-4 w-4" />
+                Export Transcript
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <Share2 className="mr-2 h-4 w-4" />
+                Share Conversation
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link
+                  href={`https://${conversation.site.domain}`}
+                  target="_blank"
+                >
+                  <ExternalLink className="mr-2 h-4 w-4" />
+                  Visit Website
+                </Link>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </DashboardHeader>
 
-      <div className="grid gap-4 mb-4 md:grid-cols-3">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-2 mb-1">
-              <User className="h-4 w-4" />
-              <span className="font-medium">User</span>
-            </div>
-            <p>{conversation.user.name}</p>
-            {conversation.user.email && (
-              <p className="text-sm text-muted-foreground">
-                {conversation.user.email}
-              </p>
-            )}
-          </CardContent>
-        </Card>
+      <div className="mb-6">
+        <div className="flex flex-wrap gap-2 mb-3">
+          <Badge
+            variant="outline"
+            className="flex items-center gap-1.5 px-3 py-1"
+          >
+            <MessageSquare className="h-3.5 w-3.5" />
+            {conversation.messages.length} messages
+          </Badge>
+          <Badge
+            variant={conversation.endedAt ? "outline" : "default"}
+            className={
+              conversation.endedAt
+                ? ""
+                : "bg-green-100 text-green-800 hover:bg-green-100 dark:bg-green-900/20 dark:text-green-400"
+            }
+          >
+            {conversation.endedAt ? "Ended" : "Active"}
+          </Badge>
+          <Badge variant="outline" className="flex items-center gap-1.5">
+            <Clock className="h-3.5 w-3.5" />
+            Duration: {getDuration()}
+          </Badge>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          Started{" "}
+          {formatDistanceToNow(new Date(conversation.startedAt), {
+            addSuffix: true,
+          })}
+          {conversation.endedAt &&
+            ` • Ended ${formatDistanceToNow(new Date(conversation.endedAt), { addSuffix: true })}`}
+        </p>
+      </div>
 
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-2 mb-1">
-              <Calendar className="h-4 w-4" />
-              <span className="font-medium">Date</span>
-            </div>
-            <p>{formatDate(conversation.startedAt)}</p>
-            <p className="text-sm text-muted-foreground">
-              {conversation.endedAt
-                ? `Ended: ${formatDate(conversation.endedAt)}`
-                : "Conversation active"}
-            </p>
-          </CardContent>
-        </Card>
+      <div className="grid gap-4 mb-6 md:grid-cols-3">
+        <ConversationMetaCard
+          icon={<User className="h-4 w-4 text-blue-600 dark:text-blue-400" />}
+          title="User"
+          value={conversation.user.name || "Anonymous"}
+          subtext={conversation.user.email || "No email provided"}
+        />
 
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-2 mb-1">
-              <ExternalLink className="h-4 w-4" />
-              <span className="font-medium">Site</span>
-            </div>
-            <p>{conversation.site.name}</p>
-            <p className="text-sm text-muted-foreground">
-              {conversation.site.domain}
-            </p>
-          </CardContent>
-        </Card>
+        <ConversationMetaCard
+          icon={
+            <Globe className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+          }
+          title="Website"
+          value={conversation.site.name}
+          subtext={conversation.site.domain}
+          badge={
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-6 px-2 text-xs"
+              asChild
+            >
+              <Link href={`/dashboard/widgets/${conversation.site.id}`}>
+                View
+              </Link>
+            </Button>
+          }
+        />
+
+        <ConversationMetaCard
+          icon={
+            <Calendar className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+          }
+          title="Conversation Time"
+          value={formatDate(conversation.startedAt)}
+          subtext={
+            conversation.endedAt
+              ? `Ended: ${formatDate(conversation.endedAt)}`
+              : "Currently active"
+          }
+        />
       </div>
 
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-bold">Messages</h2>
-        <Badge variant={conversation.endedAt ? "outline" : "default"}>
-          {conversation.endedAt ? "Ended" : "Active"}
-        </Badge>
+        <h2 className="text-xl font-semibold flex items-center gap-2">
+          <MessageSquare className="h-5 w-5" /> Message History
+        </h2>
+        <Button variant="outline" size="sm" onClick={handleExport}>
+          <Download className="mr-2 h-4 w-4" />
+          Export
+        </Button>
       </div>
 
-      <div className="space-y-4 max-w-3xl mx-auto">
-        {conversation.messages.map((message) => (
-          <div
-            key={message.id}
-            className={`flex gap-3 ${message.isUserMessage ? "justify-end" : "justify-start"}`}
-          >
-            {!message.isUserMessage && (
-              <Avatar className="h-8 w-8">
-                <AvatarFallback className="bg-primary text-primary-foreground">
-                  AI
-                </AvatarFallback>
-              </Avatar>
-            )}
-
-            <div
-              className={`rounded-lg px-4 py-2 max-w-[80%] ${
-                message.isUserMessage
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted"
-              }`}
-            >
-              <div className="mb-1">
-                <span className="text-xs font-medium">
-                  {message.isUserMessage ? "User" : message.aiModel || "AI"}
-                </span>
-                <span className="text-xs ml-2 opacity-70">
-                  {new Date(message.timestamp).toLocaleTimeString()}
-                </span>
-              </div>
-              <div>{message.content}</div>
+      <div className="bg-background border rounded-lg p-5">
+        <div className="space-y-6 max-w-4xl mx-auto">
+          {conversation.messages.length === 0 && (
+            <div className="text-center py-8">
+              <MessageSquare className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-20" />
+              <p className="text-muted-foreground mb-2">
+                No messages found in this conversation.
+              </p>
+              <p className="text-sm text-muted-foreground">
+                This may be a connection that was started but no messages were
+                exchanged.
+              </p>
             </div>
+          )}
 
-            {message.isUserMessage && (
-              <Avatar className="h-8 w-8">
-                <AvatarFallback>
-                  {conversation.user.name?.[0] || "U"}
-                </AvatarFallback>
-              </Avatar>
-            )}
-          </div>
-        ))}
+          {conversation.messages.map((message, index) => (
+            <MessageBubble
+              key={message.id}
+              content={message.content}
+              isUserMessage={message.isUserMessage}
+              timestamp={message.timestamp}
+              userName={conversation.user.name}
+              aiModel={message.aiModel}
+            />
+          ))}
 
-        {conversation.messages.length === 0 && (
-          <p className="text-center py-8 text-muted-foreground">
-            No messages found in this conversation.
-          </p>
-        )}
+          <div ref={messagesEndRef} />
+
+          {conversation.messages.length > 0 && !conversation.endedAt && (
+            <div className="flex justify-center">
+              <Badge
+                variant="outline"
+                className="animate-pulse bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-400"
+              >
+                Conversation is active
+              </Badge>
+            </div>
+          )}
+
+          {conversation.messages.length > 0 && conversation.endedAt && (
+            <div className="border-t pt-4 mt-8 text-center">
+              <p className="text-sm text-muted-foreground">
+                This conversation ended{" "}
+                {formatDistanceToNow(new Date(conversation.endedAt), {
+                  addSuffix: true,
+                })}
+              </p>
+            </div>
+          )}
+        </div>
       </div>
     </DashboardShell>
   );

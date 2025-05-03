@@ -38,13 +38,13 @@ export function DashboardShell({ children }: DashboardShellProps) {
                 <MessageSquare className="h-5 w-5 text-white" />
               </div>
               <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-violet-600">
-                ChatWidget
+                Chatterly
               </span>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
-            <ThemeToggle />
+            {/* <ThemeToggle /> */}
             <UserNav />
           </div>
         </div>
@@ -79,17 +79,25 @@ export function DashboardShell({ children }: DashboardShellProps) {
       <footer className="border-t py-4 bg-muted/40">
         <div className="flex justify-between items-center px-4 md:px-6 lg:px-8 xl:px-10 2xl:px-12">
           <div className="flex items-center gap-2">
-            <div className="bg-gradient-to-r from-blue-600 to-violet-600 p-0.5 rounded-md">
+            {/* <div className="bg-gradient-to-r from-blue-600 to-violet-600 p-0.5 rounded-md">
               <MessageSquare className="h-3 w-3 text-white" />
-            </div>
+            </div> */}
             <p className="text-xs text-muted-foreground">
-              © 2025 ChatWidget. All rights reserved.
+              {/* © 2025 Chatterly. All rights reserved. */}
             </p>
           </div>
           <div className="flex items-center gap-4">
+            {/* Made by aaditha and link to github */}
             <p className="text-xs text-muted-foreground">
-              <span className="font-medium">Last updated:</span> 2025-05-03
-              07:04:14 UTC
+              Made by{" "}
+              <a
+                href="https://www.github.com/aadithya2112"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:underline"
+              >
+                aadithya2112
+              </a>
             </p>
           </div>
         </div>

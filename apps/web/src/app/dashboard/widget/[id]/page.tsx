@@ -4,31 +4,22 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DashboardHeader } from "@/components/dashboard-header";
 import { DashboardShell } from "@/components/dashboard-shell";
-import {
-  ArrowLeft,
-  BarChart3,
-  Calendar,
-  ExternalLink,
-  Key,
-  MessageSquare,
-  User,
-  Users,
-} from "lucide-react";
+import { ArrowLeft, Clock, ExternalLink, User } from "lucide-react";
 import { toast } from "sonner";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { LoadingState } from "@/components/loading-state";
+import { ErrorState } from "@/components/error-state";
+import { StatsCards } from "@/components/stats-card";
+import { ActivityChart } from "@/components/activity-chart";
+import { ConversationsTab } from "@/components/conversations-tab";
+import { UsersTab } from "@/components/users-tab";
+import { IntegrationTab } from "@/components/integration-tab";
 
-type WidgetDetails = {
+export type WidgetDetails = {
   id: string;
   name: string;
   domain: string;
@@ -77,6 +68,7 @@ export default function WidgetDetailsPage() {
       }
 
       try {
+        setLoading(true);
         const response = await fetch(`/api/widgets/${widgetId}`, {
           method: "GET",
           headers: {
@@ -107,235 +99,88 @@ export default function WidgetDetailsPage() {
     }
   }, [widgetId, router]);
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString();
-  };
-
+  // Loading state
   if (loading) {
-    return (
-      <DashboardShell>
-        <div className="flex items-center justify-center h-64">
-          <p>Loading widget details...</p>
-        </div>
-      </DashboardShell>
-    );
+    return <LoadingState />;
   }
 
+  // Error state
   if (!widget) {
-    return (
-      <DashboardShell>
-        <div className="flex flex-col items-center justify-center h-64 gap-4">
-          <p>Widget not found or you don't have access to it.</p>
-          <Button asChild>
-            <Link href="/dashboard">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Dashboard
-            </Link>
-          </Button>
-        </div>
-      </DashboardShell>
-    );
+    return <ErrorState />;
   }
 
   return (
     <DashboardShell>
       <DashboardHeader
         heading={widget.name}
-        text={`Details and analytics for ${widget.domain}`}
+        text={`Analytics and performance data for your chat widget`}
       >
         <div className="flex gap-2">
           <Button variant="outline" asChild>
             <Link href="/dashboard">
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back
+              Dashboard
             </Link>
           </Button>
-          <Button variant="outline" asChild>
+          <Button asChild>
             <Link
               href={`https://${widget.domain}`}
               target="_blank"
               rel="noopener noreferrer"
             >
               <ExternalLink className="mr-2 h-4 w-4" />
-              Visit Site
+              Visit Website
             </Link>
           </Button>
         </div>
       </DashboardHeader>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{widget.stats.totalUsers}</div>
-            <p className="text-xs text-muted-foreground">
-              {widget.stats.todayUsers} new today
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total Conversations
-            </CardTitle>
-            <MessageSquare className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {widget.stats.totalConversations}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {widget.stats.todayConversations} new today
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Domain</CardTitle>
-            <ExternalLink className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-md font-medium truncate">{widget.domain}</div>
-            <p className="text-xs text-muted-foreground">
-              Created {new Date(widget.createdAt).toLocaleDateString()}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">API Key</CardTitle>
-            <Key className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-md font-medium truncate">{widget.apiKey}</div>
-            <p className="text-xs text-muted-foreground">
-              For widget integration
-            </p>
-          </CardContent>
-        </Card>
+      <div className="flex items-center mb-6 gap-2">
+        <Badge
+          variant="secondary"
+          className="text-base font-normal py-1.5 px-3 flex items-center gap-1.5"
+        >
+          {widget.domain}
+        </Badge>
+        <Badge
+          variant="outline"
+          className="bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400"
+        >
+          Created {new Date(widget.createdAt).toLocaleDateString()}
+        </Badge>
       </div>
 
-      <div className="mt-8">
-        <Tabs defaultValue="conversations">
-          <TabsList>
-            <TabsTrigger value="conversations">
-              Recent Conversations
+      {/* Stats Cards Section */}
+      {/* <div className="grid gap-6 mb-8">
+        <StatsCards widget={widget} />
+        <ActivityChart widget={widget} />
+      </div> */}
+
+      {/* Tabs Section */}
+      <div className="mb-8">
+        <Tabs defaultValue="conversations" className="w-full">
+          <TabsList className="h-11">
+            <TabsTrigger value="conversations" className="flex gap-2">
+              Conversations
             </TabsTrigger>
-            <TabsTrigger value="users">Recent Users</TabsTrigger>
+            <TabsTrigger value="users" className="flex gap-2">
+              Users
+            </TabsTrigger>
+            <TabsTrigger value="integration" className="flex gap-2">
+              Integration
+            </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="users" className="mt-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <User className="mr-2 h-5 w-5" />
-                  Recent Users
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {widget.recentUsers.length > 0 ? (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Email</TableHead>
-                        <TableHead>Created</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {widget.recentUsers.map((user) => (
-                        <TableRow key={user.id}>
-                          <TableCell className="font-medium">
-                            {user.name || "Anonymous"}
-                          </TableCell>
-                          <TableCell>{user.email || "Not provided"}</TableCell>
-                          <TableCell>{formatDate(user.createdAt)}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                ) : (
-                  <p className="text-center py-4 text-muted-foreground">
-                    No users yet
-                  </p>
-                )}
-              </CardContent>
-            </Card>
+          <TabsContent value="conversations">
+            <ConversationsTab widget={widget} router={router} />
           </TabsContent>
 
-          <TabsContent value="conversations" className="mt-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <MessageSquare className="mr-2 h-5 w-5" />
-                  Recent Conversations
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {widget.recentConversations.length > 0 ? (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>User</TableHead>
-                        <TableHead>Started</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Messages</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {widget.recentConversations.map((convo) => (
-                        <TableRow
-                          key={convo.id}
-                          className="cursor-pointer hover:bg-muted/50"
-                          onClick={() =>
-                            router.push(`/dashboard/conversations/${convo.id}`)
-                          }
-                        >
-                          <TableCell className="font-medium">
-                            {convo.user.name || "Anonymous"}
-                          </TableCell>
-                          <TableCell>{formatDate(convo.startedAt)}</TableCell>
-                          <TableCell>
-                            {convo.endedAt ? (
-                              <span className="text-muted-foreground">
-                                Ended
-                              </span>
-                            ) : (
-                              <span className="text-green-600">Active</span>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center justify-between">
-                              <span>{convo.messageCount}</span>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  router.push(
-                                    `/dashboard/conversations/${convo.id}`
-                                  );
-                                }}
-                                className="text-green-700"
-                              >
-                                View
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                ) : (
-                  <p className="text-center py-4 text-muted-foreground">
-                    No conversations yet
-                  </p>
-                )}
-              </CardContent>
-            </Card>
+          <TabsContent value="users">
+            <UsersTab widget={widget} />
+          </TabsContent>
+
+          <TabsContent value="integration">
+            <IntegrationTab widget={widget} />
           </TabsContent>
         </Tabs>
       </div>
