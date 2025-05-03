@@ -6,6 +6,8 @@ An AI-powered chat widget you can drop into any website, plus a modern dashboard
 
 ## Video Demo
 
+Click the image below to watch a short video demo of the project. It showcases the embeddable chat widget in action, along with the analytics dashboard.
+
 [![Watch the video](./dashboard-img.png)](https://drive.google.com/file/d/1fVWkXF23fB2H_3WEGB4bb6FlewWpBxAU/view?usp=sharing)
 
 ## Table of Contents
