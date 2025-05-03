@@ -38,7 +38,7 @@ Click the image below to watch a short video demo of the project. It showcases t
 
 ## Architecture
 
-I used a **monorepo** with [Turborepo](https://turborepo.org/) & Bun:
+**Monorepo** with [Turborepo](https://turborepo.org/) & Bun:
 
 - **apps/chat-widget** – React + Vite embeddable widget
 - **apps/web** – Next.js dashboard & HTTP API
