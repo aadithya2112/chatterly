@@ -1,92 +1,58 @@
-import { Server, Socket } from "socket.io";
 import { prismaClient as prisma } from "@repo/db/client";
 import { fetchGeminiResponse } from "./gemini";
+import { Router } from "express";
+import type { Request, Response } from "express";
 
-export function initializeSocket(io: Server): void {
-  io.on("connection", (socket: Socket) => {
-    console.log(`Client connected: ${socket.id}`);
+const chatRouter = Router();
 
-    // Handle authentication
-    socket.on("authenticate", (data) => handleAuthentication(socket, data));
-
-    // Handle message sending
-    socket.on("message:send", (data) => handleMessageSend(socket, data));
-
-    // Handle client disconnection
-    socket.on("disconnect", (reason) => {
-      console.log(`Client disconnected: ${socket.id} (Reason: ${reason})`);
-    });
-  });
-}
-
-async function handleAuthentication(socket: Socket, data: any): Promise<void> {
-  const { sessionId } = data;
-
+// POST /api/authenticate
+chatRouter.post("/authenticate", async (req: Request, res: Response) => {
+  // No explicit return type, just use res.json/res.status
+  const { sessionId } = req.body;
   if (!sessionId) {
-    console.log(`Socket ${socket.id} failed authentication: No sessionId`);
-    socket.emit("unauthorized", {
-      error: "Session ID is required for authentication",
-    });
-    socket.disconnect();
+    res
+      .status(400)
+      .json({ error: "Session ID is required for authentication" });
     return;
   }
-
   try {
-    // Validate sessionId with the database
     const user = await prisma.user.findUnique({
       where: { sessionId },
-      include: { site: true }, // Include related site for conversation creation
+      include: { site: true },
     });
-
     if (!user) {
-      console.log(
-        `Socket ${socket.id} failed authentication: Invalid sessionId`
-      );
-      socket.emit("unauthorized", { error: "Invalid session ID" });
-      socket.disconnect();
-    } else {
-      console.log(`Socket ${socket.id} authenticated successfully`);
-
-      // Create or retrieve a conversation for the user
-      const conversation = await prisma.conversation.create({
-        data: {
-          userId: user.id,
-          siteId: user.siteId,
-        },
-      });
-
-      console.log(
-        `New conversation started with ID: ${conversation.id} for user: ${user.id}`
-      );
-
-      socket.emit("authenticated", {
-        message: "Authentication successful",
-        conversationId: conversation.id,
-      });
+      res.status(401).json({ error: "Invalid session ID" });
+      return;
     }
-  } catch (error) {
-    console.error(`Authentication error for socket ${socket.id}:`, error);
-    socket.emit("unauthorized", {
-      error: "Internal server error during authentication",
+    // Create a new conversation for the user
+    const conversation = await prisma.conversation.create({
+      data: {
+        userId: user.id,
+        siteId: user.siteId,
+      },
     });
-    socket.disconnect();
-  }
-}
-
-async function handleMessageSend(socket: Socket, data: any): Promise<void> {
-  const { content, conversationId } = data;
-
-  if (!content || !conversationId) {
-    socket.emit("message:error", {
-      error: "Content and conversationId are required",
+    res.json({
+      message: "Authentication successful",
+      conversationId: conversation.id,
     });
     return;
+  } catch (error) {
+    console.error("Authentication error:", error);
+    res
+      .status(500)
+      .json({ error: "Internal server error during authentication" });
+    return;
   }
+});
 
-  console.log(
-    `Received message from client: ${content} (Conversation ID: ${conversationId})`
-  );
-
+// POST /api/message
+chatRouter.post("/message", async (req: Request, res: Response) => {
+  // No explicit return type, just use res.json/res.status
+  const { content, conversationId } = req.body;
+  if (!content || !conversationId) {
+    res.status(400).json({ error: "Content and conversationId are required" });
+    return;
+  }
   try {
     // Add the user's message to the database
     const newMessage = await prisma.message.create({
@@ -97,14 +63,8 @@ async function handleMessageSend(socket: Socket, data: any): Promise<void> {
         timestamp: new Date(),
       },
     });
-
-    console.log("User message saved to database:", newMessage);
-
     // Fetch AI response from Gemini
     const geminiResponse = await fetchGeminiResponse(content);
-
-    console.log("Gemini response received:", geminiResponse);
-
     // Add the AI's response to the database
     const aiMessage = await prisma.message.create({
       data: {
@@ -114,19 +74,20 @@ async function handleMessageSend(socket: Socket, data: any): Promise<void> {
         timestamp: new Date(),
       },
     });
-
-    console.log("AI response saved to database:", aiMessage);
-
     // Send the AI response back to the client
-    socket.emit("message:receive", {
+    res.json({
       message: geminiResponse,
       conversationId,
       isUserMessage: false,
     });
+    return;
   } catch (error) {
     console.error("Error processing message:", error);
-    socket.emit("message:error", {
-      error: "Internal server error while processing the message",
-    });
+    res
+      .status(500)
+      .json({ error: "Internal server error while processing the message" });
+    return;
   }
-}
+});
+
+export default chatRouter;

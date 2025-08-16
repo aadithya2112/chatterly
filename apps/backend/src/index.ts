@@ -1,28 +1,30 @@
 import express from "express";
 import { createServer } from "http";
-import { Server } from "socket.io";
-import { initializeSocket } from "./socket";
+import cors from "cors";
+import chatRouter from "./socket";
 
 const app = express();
-const server = createServer(app);
-
-// Initialize Socket.io
-const io = new Server(server, {
-  cors: {
-    origin: "*",
-    methods: ["GET", "POST"],
-  },
-  transports: ["websocket"],
-  allowEIO3: true,
-});
-
 // Port configuration
 const PORT = process.env.PORT || 4000;
 
-// Use the modularized socket logic
-initializeSocket(io);
+// CORS for chat-widget
+app.use(
+  cors({
+    origin: "*", // Allow all origins for development
+    credentials: true,
+  })
+);
 
-// Start the server
-server.listen(PORT, () => {
+// TODO: Add HTTP endpoints for chat
+app.use(express.json());
+
+app.get("/", (req, res) => {
+  res.send("Chatterly backend running.");
+});
+
+// Mount chat endpoints
+app.use("/api", chatRouter);
+
+app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });

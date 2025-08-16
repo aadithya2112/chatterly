@@ -2,8 +2,8 @@ import { useState, useEffect, useCallback } from "react";
 import ChatBubble from "./components/ChatBubble";
 import ChatWindow from "./components/ChatWindow";
 import { Message } from "./types";
-import { io, Socket } from "socket.io-client";
-import { WS_BACKEND_URL } from "./config";
+
+import { HTTP_BACKEND_URL } from "./config";
 
 interface AppProps {
   apiKey: string;
@@ -17,8 +17,7 @@ function App({ apiKey, serverUrl }: AppProps) {
   const [connected, setConnected] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [conversationId, setConversationId] = useState<string | null>(null);
-  const [socket, setSocket] = useState<Socket | null>(null);
-  const [_, setIsLoading] = useState(true);
+  // Removed unused isLoading state
 
   // Load messages from localStorage when sessionId is available
   useEffect(() => {
@@ -61,19 +60,14 @@ function App({ apiKey, serverUrl }: AppProps) {
     }
   }, [messages, sessionId]);
 
-  // Initialize connection with the backend
+  // Initialize connection with the backend (HTTP)
   useEffect(() => {
     const initSession = async () => {
       try {
-        setIsLoading(true);
-
+        // Removed setIsLoading (no longer used)
         // Try to get existing sessionId from localStorage
         const savedSessionId = localStorage.getItem("chatSessionId");
-        console.log("Saved sessionId from localStorage:", savedSessionId);
-
         let newSessionId = savedSessionId;
-
-        // Only make API call if no session ID exists in localStorage
         if (!savedSessionId) {
           // Make request to backend to validate API key and create new session
           const response = await fetch(`${serverUrl}/widget/init`, {
@@ -86,163 +80,37 @@ function App({ apiKey, serverUrl }: AppProps) {
               sessionId: undefined,
             }),
           });
-
           if (!response.ok) {
             throw new Error("Failed to initialize session");
           }
-
           const data = await response.json();
           newSessionId = data.sessionId;
-
-          console.log("New session ID from server:", newSessionId);
-
-          // Save the new session ID to localStorage
           if (newSessionId) {
             localStorage.setItem("chatSessionId", newSessionId);
-          } else {
-            console.error("Failed to save session ID: newSessionId is null");
           }
-          console.log("Saved new sessionId to localStorage");
-
-          // If we have history from the response, use it
           if (data.history && Array.isArray(data.history)) {
             setMessages(data.history);
           }
-        } else {
-          console.log("Using existing session ID from localStorage");
         }
-
-        // Set the session ID
         setSessionId(newSessionId);
-
-        // Connect to socket.io server
-        const newSocket = io(WS_BACKEND_URL, {
-          transports: ["websocket"], // Ensure WebSocket transport is used
-        });
-
-        newSocket.on("connect", () => {
-          console.log(`✅ Connected to server with Socket ID: ${newSocket.id}`);
-
-          // Emit authenticate event after connection using the session ID
-          newSocket.emit("authenticate", {
-            sessionId: newSessionId,
-          });
-        });
-
-        // Handle authentication success
-        newSocket.on("authenticated", (authData) => {
-          console.log("✅ Authentication successful:", authData);
-          setConnected(true);
-
-          // Save the conversationId for subsequent messages
-          setConversationId(authData.conversationId);
-          console.log(
-            `📌 Conversation started with ID: ${authData.conversationId}`
-          );
-
-          setIsLoading(false);
-        });
-
-        // Handle authentication failure
-        newSocket.on("unauthorized", (errorData) => {
-          console.error("❌ Authentication failed:", errorData);
-          setConnected(false);
-
-          // Add an error message
-          const errorMessage: Message = {
-            id: "auth-error",
-            text: "Authentication failed. Please refresh the page and try again.",
-            sender: "bot",
-            timestamp: new Date().toISOString(),
-          };
-          setMessages([errorMessage]);
-
-          // Clear invalid sessionId from localStorage
-          localStorage.removeItem("chatSessionId");
-          localStorage.removeItem(`chatMessages-${newSessionId}`);
-
-          setIsLoading(false);
-        });
-
-        // Handle incoming messages
-        newSocket.on("message:receive", (messageData) => {
-          console.log(`📥 Message received from server:`, messageData);
-          // Format the incoming message
-          const botMessage: Message = {
-            id: messageData.id || `msg-${Date.now()}`,
-            text: messageData.message,
-            sender: messageData.isUserMessage ? "user" : "bot",
-            timestamp: messageData.timestamp || new Date().toISOString(),
-          };
-
-          setMessages((prev) => [...prev, botMessage]);
-        });
-
-        // Handle message errors
-        newSocket.on("message:error", (errorData) => {
-          console.error("❌ Error from server:", errorData);
-
-          // Optionally add an error message to the chat
-          const errorMessage: Message = {
-            id: `error-${Date.now()}`,
-            text: "Sorry, there was an error processing your message.",
-            sender: "bot",
-            timestamp: new Date().toISOString(),
-          };
-
-          setMessages((prev) => [...prev, errorMessage]);
-        });
-
-        // Handle disconnect
-        newSocket.on("disconnect", (reason) => {
-          console.warn(`⚠️ Disconnected from server: ${reason}`);
-          setConnected(false);
-        });
-
-        // Handle reconnection attempts
-        newSocket.on("reconnect_attempt", (attempt) => {
-          console.log(`🔄 Reconnection attempt #${attempt}`);
-        });
-
-        // Handle successful reconnection
-        newSocket.on("reconnect", (attempt) => {
-          console.log(
-            `✅ Successfully reconnected after ${attempt} attempt(s)`
-          );
-
-          // Re-authenticate after reconnection
-          if (newSessionId) {
-            newSocket.emit("authenticate", { sessionId: newSessionId });
-          }
-        });
-
-        setSocket(newSocket);
-
-        return newSocket;
+        setConnected(true);
+        // Removed setIsLoading (no longer used)
       } catch (error) {
         console.error("Failed to initialize chat widget:", error);
-        // Add a fallback welcome message
-        const errorMessage: Message = {
-          id: "error",
-          text: "Sorry, we're having trouble connecting. Please try again later.",
-          sender: "bot",
-          timestamp: new Date().toISOString(),
-        };
-        setMessages([errorMessage]);
-        setIsLoading(false);
-        return null;
+        setConnected(false);
+        setMessages([
+          {
+            id: "error",
+            text: "Sorry, we're having trouble connecting. Please try again later.",
+            sender: "bot",
+            timestamp: new Date().toISOString(),
+          },
+        ]);
+        // Removed setIsLoading (no longer used)
       }
     };
-
-    const socketPromise = initSession();
-
-    // Cleanup function
-    return () => {
-      socketPromise.then((socket) => {
-        if (socket) socket.disconnect();
-      });
-    };
-  }, [apiKey, serverUrl]); // Reconnect if these values change
+    initSession();
+  }, [apiKey, serverUrl]);
 
   useEffect(() => {
     // If chat is closed and there's a new message from the bot, show notification
@@ -256,34 +124,89 @@ function App({ apiKey, serverUrl }: AppProps) {
   }, [messages, isOpen]);
 
   const handleSendMessage = useCallback(
-    (text: string) => {
-      if (!text.trim() || !connected || !socket || !conversationId) {
-        console.warn(
-          "Cannot send message: missing connection or conversationId"
-        );
+    async (text: string) => {
+      if (!text.trim() || !connected || !sessionId) {
+        console.warn("Cannot send message: missing connection or sessionId");
         return;
       }
 
-      // Create a pending message to show immediately
+      // Add user message to UI
       const userMessage: Message = {
         id: Date.now().toString(),
         text,
         sender: "user",
         timestamp: new Date().toISOString(),
       };
-
-      // Add to UI
       setMessages((prev) => [...prev, userMessage]);
 
-      console.log(`📤 Sending message: "${text}"`);
+      // Authenticate and get conversationId if not already
+      let convId = conversationId;
+      if (!convId) {
+        try {
+          const response = await fetch(`${HTTP_BACKEND_URL}/authenticate`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ sessionId }),
+          });
+          if (!response.ok) {
+            throw new Error("Authentication failed");
+          }
+          const data = await response.json();
+          convId = data.conversationId;
+          setConversationId(convId);
+        } catch (error) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: `auth-error-${Date.now()}`,
+              text: "Authentication failed. Please refresh and try again.",
+              sender: "bot",
+              timestamp: new Date().toISOString(),
+            },
+          ]);
+          setConnected(false);
+          return;
+        }
+      }
 
-      // Send to server via socket.io using the message:send event
-      socket.emit("message:send", {
-        content: text,
-        conversationId, // Use the conversationId from authenticated event
-      });
+      // Send message to backend
+      try {
+        const response = await fetch(`${HTTP_BACKEND_URL}/message`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ content: text, conversationId: convId }),
+        });
+        if (!response.ok) {
+          throw new Error("Error sending message");
+        }
+        const data = await response.json();
+        // Add bot response to UI
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `bot-${Date.now()}`,
+            text: data.message,
+            sender: "bot",
+            timestamp: new Date().toISOString(),
+          },
+        ]);
+      } catch (error) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `error-${Date.now()}`,
+            text: "Sorry, there was an error processing your message.",
+            sender: "bot",
+            timestamp: new Date().toISOString(),
+          },
+        ]);
+      }
     },
-    [connected, socket, conversationId]
+    [connected, sessionId, conversationId]
   );
 
   const toggleChat = () => {
