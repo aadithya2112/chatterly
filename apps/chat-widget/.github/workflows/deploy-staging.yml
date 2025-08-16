@@ -2,7 +2,7 @@ name: Deploy Staging to GitHub Pages
 
 on:
   push:
-    branches: [ staging ]
+    branches: [staging]
   workflow_dispatch:
 
 permissions:
@@ -15,7 +15,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build:
+  deploy-staging:
     runs-on: ubuntu-latest
     
     steps:
@@ -33,23 +33,13 @@ jobs:
     - name: Build chat widget for staging
       run: |
         cd apps/chat-widget
-        # Use staging config
-        sed -i 's|// export const HTTP_BACKEND_URL = "http://localhost:4000/api";|export const HTTP_BACKEND_URL = "http://localhost:4000/api";|g' src/config.ts
-        sed -i 's|export const HTTP_BACKEND_URL = "https://chatterly.aadithya.tech/api";|// export const HTTP_BACKEND_URL = "https://chatterly.aadithya.tech/api";|g' src/config.ts
+        # Use staging config (point to your staging backend)
+        sed -i 's|export const HTTP_BACKEND_URL = "http://localhost:4000/api";|export const HTTP_BACKEND_URL = "https://your-staging-backend.herokuapp.com/api";|g' src/config.ts
         bun run build
         
-    - name: Upload artifact
-      uses: actions/upload-pages-artifact@v3
+    - name: Deploy to GitHub Pages (staging)
+      uses: peaceiris/actions-gh-pages@v3
       with:
-        path: ./apps/chat-widget/dist
-
-  deploy:
-    environment:
-      name: github-pages-staging
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./apps/chat-widget/dist
+        publish_branch: gh-pages-staging
